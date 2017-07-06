@@ -133,7 +133,8 @@
 				emptyClass      : The class used for empty list placeholder elements (default 'dd-empty')
 				expandBtnHTML   : The HTML text used to generate a list item expand button (default '<button data-action="expand">Expand></button>')
 				collapseBtnHTML : The HTML text used to generate a list item collapse button (default '<button data-action="collapse">Collapse</button>')
-
+				handleBtnHTML		: The HTML text used to generate a handle to drag and drop the listItem (default '<div class="dd-handle dd3-handle click-draggable">&nbsp;</div>')
+				handleOn				: Bool, to activate the handle btn
 
 			 */
 			this.defaultOptions = function(value){
@@ -164,7 +165,7 @@
 								 * get executed
 								 */
 								model = runFormatters(model, $ngModel);
-								var root = buildNestableHtml(model, itemTemplate);
+								var root = buildNestableHtml(model, itemTemplate, options);
 								$element.empty().append(root);
 								$compile(root)($scope);
 								root.nestable(options);
@@ -185,13 +186,22 @@
 			function buildNestableHtml(model, tpl){
 				var root = $('<div class="dd"></div>');
 				var rootList = $('<ol class="dd-list"></ol>').appendTo(root);
+				var options = [].slice.call(arguments).slice(2)[0];
 				model.forEach(function f(item){
 					var list = Array.prototype.slice.call(arguments).slice(-1)[0];
 					if(!(list instanceof $)) list = rootList;
 
 					var listItem = $('<li class="dd-item"></li>');
 					var listElement = $('<div ng-nestable-item class="dd-handle"></div>');
-					listElement.append(tpl).appendTo(listItem);
+					if(options && isObject(options) && options.handleOn){
+						options.handleBtnHTML = options.handleBtnHTML || '<div class="dd-handle dd3-handle click-draggable">&nbsp;</div>';
+						var handleElement = $(options.handleBtnHTML);
+						listItem.append([listElement.append(tpl),handleElement]);
+					}else{
+						listItem.addClass('no-handle');
+						listElement.addClass('click-draggable');
+						listElement.append(tpl).appendTo(listItem);
+					}
 					list.append(listItem);
 					var itemData = $nestable.itemProperty ? item[$nestable.itemProperty] : item;
 					listItem.data('item', itemData);
@@ -221,6 +231,10 @@
 				}
 
 				return value;
+			}
+
+			function isObject(obj){
+				return Object.prototype.toString.call(obj) === '[object Object]';
 			}
 	}])
 	.directive('ngNestableItem', ['$nestable', function($nestable){
